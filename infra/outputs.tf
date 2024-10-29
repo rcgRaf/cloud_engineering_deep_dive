@@ -1,7 +1,7 @@
 
 # Output the VPC ID
 output "vpc_id" {
-  description = "The ID of the VPC"
+  description = "The ID of the VPC  sad"
   value       = aws_vpc.core.id
 }
 
