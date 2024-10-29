@@ -3,7 +3,7 @@ data "terraform_remote_state" "projects" {
   backend  = "s3"
   config = {
     bucket               = "rcgrafbucket"
-    key                  = "projects/aca-terraform-states.tfstate"
+    key                  = "projects/terraform-states-core.tfstate"
     region               = "us-east-1"
     workspace_key_prefix = "env:"
   }
