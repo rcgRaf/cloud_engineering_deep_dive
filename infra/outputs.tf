@@ -12,7 +12,7 @@ output "private_subnet_ids" {
 }
 
 output "vpc_cidr" {
-  description = "The CIDR block of the VPC another"
+  description = "The CIDR block of the VPC another sad"
   value       = aws_vpc.core.cidr_block
 }
 
