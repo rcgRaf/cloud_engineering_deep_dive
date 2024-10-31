@@ -17,7 +17,7 @@ output "vpc_cidr" {
 }
 
 output "public_subnet_ids" {
-  description = "List of IDs of public subnets"
+  description = "List of IDs of public subnets sad"
   value       = aws_subnet.core_public[*].id
 }
 
