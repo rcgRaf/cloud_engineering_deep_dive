@@ -3,7 +3,7 @@ resource "aws_vpc" "core" {
   enable_dns_hostnames = true
 
   tags = {
-    Name = "${terraform.workspace}-core-vpc"
+    Name = "${terraform.workspace}-core-vp-asdc"
   }
 }
 
