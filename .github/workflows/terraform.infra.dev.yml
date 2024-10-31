@@ -1,18 +1,18 @@
-name: Main hub infrastructure deployment
+name: Dev infrastructure deployment
 
 on:
   push:
     branches:
-      - main
+      - dev
     paths:
-      - 'main/**'
-      - '.github/workflows/terraform.main.yml'
+      - 'infra/**'
+      - '.github/workflows/terraform.infra.dev.yml'
   pull_request:
     branches:
-      - main
+      - dev
     paths:
-      - 'main/**'
-      - '.github/workflows/terraform.main.yml'
+      - 'infra/**'
+      - '.github/workflows/terraform.infra.dev.yml'
 
 jobs:
   tfplan:
@@ -47,7 +47,7 @@ jobs:
 
     - name: Terraform Init
       run: terraform init
-      working-directory: ./main
+      working-directory: ./infra
 
     - name: Verify and Prepare Terraform Workspace
       run: |
@@ -61,29 +61,30 @@ jobs:
           echo "Workspace $TERRAFORM_WORKSPACE does not exist. Creating it."
           terraform workspace new $TERRAFORM_WORKSPACE
         fi
-      working-directory: ./main
+      working-directory: ./infra
 
     - name: Terraform Format Check
       run: terraform fmt -check
-      working-directory: ./main
+      working-directory: ./infra
 
     - name: Terraform Plan
       run: terraform plan -out=tfplan
-      working-directory: ./main
+      working-directory: ./infra
 
     - name: Upload Terraform Plan
       uses: actions/upload-artifact@v3
       with:
         name: tfplan
-        path: main/tfplan
+        path: infra/tfplan
 
   tfapply:
     needs: tfplan
     runs-on: ubuntu-latest
+    environment: dev-infra-deploy
     permissions:
       id-token: write
       contents: read
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
 
     steps:
     - name: Checkout code
@@ -103,21 +104,21 @@ jobs:
 
     - name: Terraform Init
       run: terraform init
-      working-directory: ./main
+      working-directory: ./infra
 
     - name: Set Workspace Name
       run: echo "TERRAFORM_WORKSPACE=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
     - name: Select Terraform Workspace
       run: terraform workspace select $TERRAFORM_WORKSPACE
-      working-directory: ./main
+      working-directory: ./infra
 
     - name: Download Terraform Plan
       uses: actions/download-artifact@v3
       with:
         name: tfplan
-        path: main
+        path: infra
 
     - name: Terraform Apply
       run: terraform apply -auto-approve tfplan
-      working-directory: ./main
+      working-directory: ./infra
