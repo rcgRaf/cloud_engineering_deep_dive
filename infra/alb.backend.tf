@@ -40,7 +40,7 @@ resource "aws_lb" "backend" {
   security_groups    = [aws_security_group.alb.id]
   subnets            = aws_subnet.core_public[*].id
 
-  enable_deletion_protection = true
+  enable_deletion_protection = false
   enable_http2               = true
 
 
