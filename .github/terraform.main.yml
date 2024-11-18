@@ -1,0 +1,123 @@
+name: Main hub infrastructure deployment
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'main/**'
+      - '.github/workflows/terraform.main.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'main/**'
+      - '.github/workflows/terraform.main.yml'
+
+jobs:
+  tfplan:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE_TO_ASSUME }}
+        aws-region: us-east-1
+        role-session-name: GitHubActionsTerraformSession
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.9.8
+
+    - name: Set Workspace Name
+      run: |
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          echo "TERRAFORM_WORKSPACE=${{ github.base_ref }}" >> $GITHUB_ENV
+        else
+          echo "TERRAFORM_WORKSPACE=${GITHUB_REF##*/}" >> $GITHUB_ENV
+        fi
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./main
+
+    - name: Verify and Prepare Terraform Workspace
+      run: |
+        echo "Current TERRAFORM_WORKSPACE: $TERRAFORM_WORKSPACE"
+        
+        # Check if the workspace exists
+        if terraform workspace list 2>&1 | grep -q "$TERRAFORM_WORKSPACE"; then
+          echo "Workspace $TERRAFORM_WORKSPACE exists. It will be used automatically."
+          terraform workspace select $TERRAFORM_WORKSPACE
+        else
+          echo "Workspace $TERRAFORM_WORKSPACE does not exist. Creating it."
+          terraform workspace new $TERRAFORM_WORKSPACE
+        fi
+      working-directory: ./main
+
+    - name: Terraform Format Check
+      run: terraform fmt -check
+      working-directory: ./main
+
+    - name: Terraform Plan
+      run: terraform plan -out=tfplan
+      working-directory: ./main
+
+    - name: Upload Terraform Plan
+      uses: actions/upload-artifact@v3
+      with:
+        name: tfplan
+        path: main/tfplan
+
+  tfapply:
+    needs: tfplan
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE_TO_ASSUME }}
+        aws-region: us-east-1
+        role-session-name: GitHubActionsTerraformSession
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.9.8
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./main
+
+    - name: Set Workspace Name
+      run: echo "TERRAFORM_WORKSPACE=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+    - name: Select Terraform Workspace
+      run: terraform workspace select $TERRAFORM_WORKSPACE
+      working-directory: ./main
+
+    - name: Download Terraform Plan
+      uses: actions/download-artifact@v3
+      with:
+        name: tfplan
+        path: main
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve tfplan
+      working-directory: ./main
