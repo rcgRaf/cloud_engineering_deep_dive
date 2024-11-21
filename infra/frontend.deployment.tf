@@ -1,143 +1,148 @@
-resource "aws_s3_bucket" "frontend" {
-  bucket        = "${terraform.workspace}-${local.project_name}-frontend-app-1"
-  force_destroy = true
-}
+# # import {
+# #   to = aws_s3_bucket.frontend
+# #   id = "i-abcd1234"
+# # }
 
-resource "aws_s3_bucket_public_access_block" "frontend" {
-  bucket = aws_s3_bucket.frontend.id
+# resource "aws_s3_bucket" "frontend" {
+#   bucket        = "${terraform.workspace}-${local.project_name}-frontend-app-1"
+#   force_destroy = true
+# }
 
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
+# resource "aws_s3_bucket_public_access_block" "frontend" {
+#   bucket = aws_s3_bucket.frontend.id
 
-resource "aws_s3_bucket_versioning" "frontend" {
-  bucket = aws_s3_bucket.frontend.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
+#   block_public_acls       = true
+#   block_public_policy     = true
+#   ignore_public_acls      = true
+#   restrict_public_buckets = true
+# }
 
-resource "aws_s3_bucket_policy" "frontend" {
-  bucket = aws_s3_bucket.frontend.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "AllowCloudFrontAccess"
-        Effect = "Allow"
-        Principal = {
-          AWS = aws_cloudfront_origin_access_identity.frontend.iam_arn
-        }
-        Action   = "s3:GetObject"
-        Resource = "${aws_s3_bucket.frontend.arn}/*"
-      }
-    ]
-  })
-}
+# resource "aws_s3_bucket_versioning" "frontend" {
+#   bucket = aws_s3_bucket.frontend.id
+#   versioning_configuration {
+#     status = "Enabled"
+#   }
+# }
 
-# CloudFront Origin Access Identity
-resource "aws_cloudfront_origin_access_identity" "frontend" {
-  comment = "access-identity-${terraform.workspace}-${local.project_name}-frontend"
-}
+# resource "aws_s3_bucket_policy" "frontend" {
+#   bucket = aws_s3_bucket.frontend.id
+#   policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [
+#       {
+#         Sid    = "AllowCloudFrontAccess"
+#         Effect = "Allow"
+#         Principal = {
+#           AWS = aws_cloudfront_origin_access_identity.frontend.iam_arn
+#         }
+#         Action   = "s3:GetObject"
+#         Resource = "${aws_s3_bucket.frontend.arn}/*"
+#       }
+#     ]
+#   })
+# }
 
-# CloudFront distribution
-resource "aws_cloudfront_distribution" "frontend" {
-  enabled             = true
-  is_ipv6_enabled     = true
-  default_root_object = "index.html"
-  price_class         = "PriceClass_100" # Use only North America and Europe edge locations
+# # CloudFront Origin Access Identity
+# resource "aws_cloudfront_origin_access_identity" "frontend" {
+#   comment = "access-identity-${terraform.workspace}-${local.project_name}-frontend"
+# }
 
-  origin {
-    domain_name = aws_s3_bucket.frontend.bucket_regional_domain_name
-    origin_id   = "S3Origin"
+# # CloudFront distribution
+# resource "aws_cloudfront_distribution" "frontend" {
+#   enabled             = true
+#   is_ipv6_enabled     = true
+#   default_root_object = "index.html"
+#   price_class         = "PriceClass_100" # Use only North America and Europe edge locations
 
-    s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.frontend.cloudfront_access_identity_path
-    }
-  }
+#   origin {
+#     domain_name = aws_s3_bucket.frontend.bucket_regional_domain_name
+#     origin_id   = "S3Origin"
 
-  default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "S3Origin"
+#     s3_origin_config {
+#       origin_access_identity = aws_cloudfront_origin_access_identity.frontend.cloudfront_access_identity_path
+#     }
+#   }
 
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
-      }
-    }
+#   default_cache_behavior {
+#     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+#     cached_methods   = ["GET", "HEAD"]
+#     target_origin_id = "S3Origin"
 
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 3600  # 1 hour
-    max_ttl                = 86400 # 24 hours
-    compress               = true
-  }
+#     forwarded_values {
+#       query_string = false
+#       cookies {
+#         forward = "none"
+#       }
+#     }
 
-  # Cache behavior for static assets with longer TTL
-  ordered_cache_behavior {
-    path_pattern     = "/assets/*"
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "S3Origin"
+#     viewer_protocol_policy = "redirect-to-https"
+#     min_ttl                = 0
+#     default_ttl            = 3600  # 1 hour
+#     max_ttl                = 86400 # 24 hours
+#     compress               = true
+#   }
 
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
-      }
-    }
+#   # Cache behavior for static assets with longer TTL
+#   ordered_cache_behavior {
+#     path_pattern     = "/assets/*"
+#     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+#     cached_methods   = ["GET", "HEAD"]
+#     target_origin_id = "S3Origin"
 
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 86400    # 24 hours
-    max_ttl                = 31536000 # 1 year
-    compress               = true
-  }
+#     forwarded_values {
+#       query_string = false
+#       cookies {
+#         forward = "none"
+#       }
+#     }
 
-  # Handle SPA routing - return index.html for all 403/404 errors
-  custom_error_response {
-    error_code            = 403
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 10
-  }
+#     viewer_protocol_policy = "redirect-to-https"
+#     min_ttl                = 0
+#     default_ttl            = 86400    # 24 hours
+#     max_ttl                = 31536000 # 1 year
+#     compress               = true
+#   }
 
-  custom_error_response {
-    error_code            = 404
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 10
-  }
+#   # Handle SPA routing - return index.html for all 403/404 errors
+#   custom_error_response {
+#     error_code            = 403
+#     response_code         = 200
+#     response_page_path    = "/index.html"
+#     error_caching_min_ttl = 10
+#   }
 
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
+#   custom_error_response {
+#     error_code            = 404
+#     response_code         = 200
+#     response_page_path    = "/index.html"
+#     error_caching_min_ttl = 10
+#   }
 
-  viewer_certificate {
-    cloudfront_default_certificate = true
-  }
+#   restrictions {
+#     geo_restriction {
+#       restriction_type = "none"
+#     }
+#   }
 
-  tags = {
-    Environment = terraform.workspace
-    Project     = local.project_name
-  }
-}
+#   viewer_certificate {
+#     cloudfront_default_certificate = true
+#   }
 
-# Outputs
-output "cloudfront_domain" {
-  value = aws_cloudfront_distribution.frontend.domain_name
-}
+#   tags = {
+#     Environment = terraform.workspace
+#     Project     = local.project_name
+#   }
+# }
 
-output "cloudfront_id" {
-  value = aws_cloudfront_distribution.frontend.id
-}
+# # Outputs
+# output "cloudfront_domain" {
+#   value = aws_cloudfront_distribution.frontend.domain_name
+# }
 
-output "s3_bucket" {
-  value = aws_s3_bucket.frontend.id
-}
+# output "cloudfront_id" {
+#   value = aws_cloudfront_distribution.frontend.id
+# }
+
+# output "s3_bucket" {
+#   value = aws_s3_bucket.frontend.id
+# }
