@@ -1,10 +1,10 @@
 # Task Definition - Initial/base version
 resource "aws_ecs_task_definition" "backend" {
   family                   = "${terraform.workspace}-backend"
-  requires_compatibilities = ["FARGATE"]
+  requires_compatibilities = ["EC2"]
   network_mode             = "awsvpc"
   cpu                      = 256
-  memory                   = 512
+  memory                   = 256
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
   task_role_arn            = aws_iam_role.ecs_task.arn
 
@@ -12,6 +12,8 @@ resource "aws_ecs_task_definition" "backend" {
   container_definitions = jsonencode([
     {
       name      = "backend"
+      cpu       = 256
+      memory    = 256
       image     = "${aws_ecr_repository.backend_repos.repository_url}:latest"
       essential = true
       portMappings = [
@@ -43,7 +45,6 @@ resource "aws_ecs_task_definition" "backend" {
   ])
 
 
-
   tags = {
     Environment = terraform.workspace
   }
@@ -52,17 +53,17 @@ resource "aws_ecs_task_definition" "backend" {
 resource "aws_ecs_service" "backend" {
   name            = "${terraform.workspace}-backend"
   cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.backend.arn
+  task_definition = "${aws_ecs_task_definition.backend.family}:${max(aws_ecs_task_definition.backend.revision, data.aws_ecs_task_definition.backend.revision)}"
   desired_count   = 1
 
   capacity_provider_strategy {
-    capacity_provider = "FARGATE"
+    capacity_provider = aws_ecs_capacity_provider.ec2.name
     weight            = 1
     base              = 1
   }
   capacity_provider_strategy {
-    capacity_provider = "FARGATE_SPOT"
-    weight            = 100
+    capacity_provider = aws_ecs_capacity_provider.ec2_spot.name
+    weight            = 1
   }
 
   network_configuration {
@@ -82,14 +83,19 @@ resource "aws_ecs_service" "backend" {
     rollback = true
   }
 
-  #   ordered_placement_strategy {
-  #     type  = "binpack"
-  #     field = "cpu"
-  #   }
+  ordered_placement_strategy {
+    type  = "binpack"
+    field = "cpu"
+  }
 
   lifecycle {
     ignore_changes = [task_definition]
   }
+}
+
+# Add this data source to fetch the latest task definition
+data "aws_ecs_task_definition" "backend" {
+  task_definition = aws_ecs_task_definition.backend.family
 }
 
 resource "aws_security_group" "backend" {
@@ -98,10 +104,10 @@ resource "aws_security_group" "backend" {
   vpc_id      = aws_vpc.core.id
 
   ingress {
-    from_port   = 4444
-    to_port     = 4444
-    protocol    = "tcp"
-    cidr_blocks = [local.core_vpc_cidr]
+    from_port       = 4444
+    to_port         = 4444
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
   }
 
   egress {
@@ -132,23 +138,23 @@ resource "aws_iam_role" "ecs_task" {
 }
 
 
-resource "aws_iam_role_policy" "ecs_task" {
-  name = "${terraform.workspace}-backend-ecs-task-policy"
-  role = aws_iam_role.ecs_task.id
+# resource "aws_iam_role_policy" "ecs_task" {
+#   name = "${terraform.workspace}-backend-ecs-task-policy"
+#   role = aws_iam_role.ecs_task.id
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-        ]
-        Resource = ["*"]
-      }
-    ]
-  })
-}
+#   policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "s3:GetObject",
+#         ]
+#         Resource = ["*"]
+#       }
+#     ]
+#   })
+# }
 
 
 resource "aws_cloudwatch_log_group" "ecs_backend" {

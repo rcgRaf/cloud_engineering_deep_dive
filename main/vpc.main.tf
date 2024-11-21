@@ -1,38 +1,38 @@
-resource "aws_vpc" "main" {
-  cidr_block           = local.vpc_cidr
-  enable_dns_hostnames = true
+# resource "aws_vpc" "main" {
+#   cidr_block           = local.vpc_cidr
+#   enable_dns_hostnames = true
 
-  tags = {
-    Name = "${local.prefix}-vpc"
-  }
-}
+#   tags = {
+#     Name = "${local.prefix}-vpc"
+#   }
+# }
 
-resource "aws_subnet" "main" {
-  count             = local.az_count
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(local.vpc_cidr, 8, count.index)
-  availability_zone = "${local.region}${local.az_suffix[count.index]}"
+# resource "aws_subnet" "main" {
+#   count             = local.az_count
+#   vpc_id            = aws_vpc.main.id
+#   cidr_block        = cidrsubnet(local.vpc_cidr, 8, count.index)
+#   availability_zone = "${local.region}${local.az_suffix[count.index]}"
 
-  tags = {
-    Name = "${local.prefix}-subnet-private-${local.az_suffix[count.index]}"
-  }
-}
+#   tags = {
+#     Name = "${local.prefix}-subnet-private-${local.az_suffix[count.index]}"
+#   }
+# }
 
 
-resource "aws_route_table" "main" {
-  count  = local.az_count
-  vpc_id = aws_vpc.main.id
+# resource "aws_route_table" "main" {
+#   count  = local.az_count
+#   vpc_id = aws_vpc.main.id
 
-  tags = {
-    Name = "${local.prefix}-private-rt-${local.az_suffix[count.index]}"
-  }
-}
+#   tags = {
+#     Name = "${local.prefix}-private-rt-${local.az_suffix[count.index]}"
+#   }
+# }
 
-resource "aws_route_table_association" "main" {
-  count          = local.az_count
-  subnet_id      = aws_subnet.main[count.index].id
-  route_table_id = aws_route_table.main[count.index].id
-}
+# resource "aws_route_table_association" "main" {
+#   count          = local.az_count
+#   subnet_id      = aws_subnet.main[count.index].id
+#   route_table_id = aws_route_table.main[count.index].id
+# }
 
 
 
@@ -70,20 +70,20 @@ resource "aws_route_table_association" "main" {
 
 
 
-resource "aws_internet_gateway" "main" {
-  vpc_id = aws_vpc.main.id
+# resource "aws_internet_gateway" "main" {
+#   vpc_id = aws_vpc.main.id
 
-  tags = {
-    Name = "${local.prefix}-igw"
-  }
-}
+#   tags = {
+#     Name = "${local.prefix}-igw"
+#   }
+# }
 
-resource "aws_route" "main_internet_access" {
-  count                  = local.az_count
-  route_table_id         = aws_route_table.main[count.index].id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.main.id
-}
+# resource "aws_route" "main_internet_access" {
+#   count                  = local.az_count
+#   route_table_id         = aws_route_table.main[count.index].id
+#   destination_cidr_block = "0.0.0.0/0"
+#   gateway_id             = aws_internet_gateway.main.id
+# }
 
 
 

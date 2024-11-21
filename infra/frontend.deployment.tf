@@ -1,5 +1,6 @@
 resource "aws_s3_bucket" "frontend" {
-  bucket = "${terraform.workspace}-${local.project_name}-frontend-app"
+  bucket        = "${terraform.workspace}-${local.project_name}-frontend-app-1"
+  force_destroy = true
 }
 
 resource "aws_s3_bucket_public_access_block" "frontend" {
