@@ -1,0 +1,25 @@
+#!/bin/bash
+
+format_error=false
+
+check_and_format() {
+    folder=$1
+    echo "Checking Terraform formatting in $folder folder..."
+    if ! terraform fmt -check -recursive ./$folder; then
+        echo "Formatting issues found in $folder. Applying fixes..."
+        terraform fmt -recursive ./$folder
+        format_error=true
+    fi
+}
+
+check_and_format "infra"
+check_and_format "main"
+
+if [ "$format_error" = true ]; then
+    echo "Formatting issues were found and fixed. Please review the changes and stage them before committing."
+    exit 1
+fi
+
+
+echo "Pre-commit checks passed successfully."
+exit 0

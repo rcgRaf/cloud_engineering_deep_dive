@@ -33,4 +33,4 @@ terraform.rc
 # Other project-specific ignores
 .env
 
-pub_keys/*
+.DS_Store

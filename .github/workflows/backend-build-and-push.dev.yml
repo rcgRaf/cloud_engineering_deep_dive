@@ -96,3 +96,4 @@ jobs:
         service: ${{ env.BRANCH_NAME }}-backend
         cluster: ${{ env.BRANCH_NAME }}-cluster
         wait-for-service-stability: true
+
