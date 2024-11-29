@@ -3,7 +3,7 @@ name: Deploy Lambda to S3
 on:
   push:
     branches:
-      - main  # Trigger the workflow on pushes to the `main` branch
+      - lambdas-raf  # Trigger the workflow on pushes to the `lambdas-raf` branch
 
 jobs:
   deploy-lambda:
@@ -14,13 +14,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Set up AWS CLI
-    - name: Configure AWS Credentials
+
+        # Step 2: Configure AWS credentials using OIDC
+    - name: Configure AWS Credentials via OIDC
       uses: aws-actions/configure-aws-credentials@v3
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1 # Change this if your S3 bucket is in another region
+        role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE_TO_ASSUME }}
+        aws-region: us-east-1 # Replace with your AWS region if needed
 
     # Step 3: Zip the Lambda code
     - name: Zip Lambda Code

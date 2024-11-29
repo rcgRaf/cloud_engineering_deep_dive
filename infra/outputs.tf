@@ -37,3 +37,11 @@ output "private_route_table_ids" {
   description = "The IDs of the private route tables"
   value       = aws_route_table.core_private[*].id
 }
+
+output "github_actions_role_arn" {
+  value = aws_iam_role.github_actions_role.arn
+}
+
+output "lambda_function_arn" {
+  value = aws_lambda_function.hello_world.arn
+}
