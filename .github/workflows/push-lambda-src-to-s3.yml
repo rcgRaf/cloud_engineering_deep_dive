@@ -11,7 +11,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-      
+
     steps:
     # Step 1: Check out the repository
     - name: Checkout code
@@ -22,7 +22,7 @@ jobs:
     - name: Configure AWS Credentials via OIDC
       uses: aws-actions/configure-aws-credentials@v3
       with:
-        role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE_TO_ASSUME }}
+        role-to-assume: arn:aws:iam::122610483522:role/github_actions_lambda_deploy_role
         aws-region: us-east-1 # Replace with your AWS region if needed
 
     # Step 3: Zip the Lambda code
