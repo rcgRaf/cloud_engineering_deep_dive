@@ -1,60 +1,63 @@
-resource "aws_lambda_function" "lambda_main" {
-  role = role
-  function_name = "${project_name}-lambda"
+# resource "aws_iam_role" "lambda_execution_role" {
+#   name               = "lambda_execution_role"
+#   assume_role_policy = <<EOF
+# {
+#   "Version": "2012-10-17",
+#   "Statement": [
+#     {
+#       "Action": "sts:AssumeRole",
+#       "Principal": {
+#         "Service": "lambda.amazonaws.com"
+#       },
+#       "Effect": "Allow",
+#       "Sid": ""
+#     }
+#   ]
+# }
+# EOF
+# }
 
-}
+# resource "aws_iam_role_policy" "lambda_policy" {
+#   name   = "lambda_policy"
+#   role   = aws_iam_role.lambda_execution_role.id
+#   policy = <<EOF
+# {
+#   "Version": "2012-10-17",
+#   "Statement": [
+#     {
+#       "Action": [
+#         "logs:CreateLogGroup",
+#         "logs:CreateLogStream",
+#         "logs:PutLogEvents"
+#       ],
+#       "Effect": "Allow",
+#       "Resource": "arn:aws:logs:*:*:*"
+#     }
+#   ]
+# }
+# EOF
+# }
 
+# resource "aws_lambda_function" "hello_world" {
+#   function_name = "hello_world_lambda"
+#   role          = aws_iam_role.lambda_execution_role.arn
+#   runtime       = "nodejs18.x"
+#   handler       = "index.handler"
 
-resource "aws_iam_role" "lambda_execution_role" {
-  name               = "lambda_execution_role"
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "lambda.amazonaws.com"
-      },
-      "Effect": "Allow",
-      "Sid": ""
-    }
-  ]
-}
-EOF
-}
+#   # Fetch the Lambda zip file from S3
+#   s3_bucket = backend.bucket.name
+#   s3_key    = backend.bucket.key
 
-resource "aws_iam_role_policy" "lambda_policy" {
-  name   = "lambda_policy"
-  role   = aws_iam_role.lambda_execution_role.id
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
-      "Effect": "Allow",
-      "Resource": "arn:aws:logs:*:*:*"
-    }
-  ]
-}
-EOF
-}
+#   # Compute the hash from the S3 object
+#   source_code_hash = data.aws_s3_bucket_object.lambda_zip.etag
+# }
 
-resource "aws_lambda_function" "hello_world" {
-  function_name = "hello_world_lambda"
-  role          = aws_iam_role.lambda_execution_role.arn
-  runtime       = "nodejs18.x"
-  handler       = "index.handler"
-  
-  filename = "lambda.zip" # The zipped file containing the Lambda code
+# # Fetch the Lambda Zip file from S3
+# data "aws_s3_bucket_object" "lambda_zip" {
+#   bucket = aws_lambda_function.hello_world.s3_bucket
+#   key    = backend.bucket.key
+# }
 
-  source_code_hash = filebase64sha256("lambda.zip") # Ensure updates trigger a redeploy
-}
 # IAM Role for GitHub Actions
 resource "aws_iam_role" "github_actions_role" {
   name = "github_actions_lambda_deploy_role"
