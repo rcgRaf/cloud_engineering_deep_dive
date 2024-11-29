@@ -73,7 +73,10 @@ resource "aws_iam_role" "github_actions_role" {
         Action = "sts:AssumeRoleWithWebIdentity",
         Condition = {
           StringEquals = {
-            "token.actions.githubusercontent.com:sub" : "repo:rcgraf/cloud_engineering_deep_dive:ref:refs/heads/lambdas-raf"
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          }
+          StringLike = {
+            "token.actions.githubusercontent.com:sub" = "repo:${local.github_org}/${local.github_repo_name}:*"
           }
         }
       }

@@ -15,4 +15,6 @@ locals {
   core_vpc_cidr    = module.network_secret_ro.secret_map["core_vpc_cidr"]
   project_name     = "cloud-deep-dive"
   core_region      = data.aws_region.current.name
+  github_org       = "rcgRaf"
+  github_repo_name = "cloud_engineering_deep_dive"
 }
