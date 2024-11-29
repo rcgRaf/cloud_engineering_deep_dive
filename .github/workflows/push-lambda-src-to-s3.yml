@@ -8,7 +8,10 @@ on:
 jobs:
   deploy-lambda:
     runs-on: ubuntu-latest
-
+    permissions:
+      id-token: write
+      contents: read
+      
     steps:
     # Step 1: Check out the repository
     - name: Checkout code
