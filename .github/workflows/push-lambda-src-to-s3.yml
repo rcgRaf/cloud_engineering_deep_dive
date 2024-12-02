@@ -30,8 +30,22 @@ jobs:
       run: |
         mkdir -p build
         zip -j build/lambda.zip src/lambda/index.js
+  
+    
+    # Step 4: Zip the Lambda layer
+    - name: Zip Lambda Layer
+      run: |
+        mkdir -p build
+        zip -j build/layer.zip src/lambda/nodejs
+ 
 
-    # Step 4: Upload to S3
+    # Step 5: Upload to S3
     - name: Upload to S3
       run: |
         aws s3 cp build/lambda.zip s3://rcgrafbucket/lambda.zip
+
+    # Step 6: Upload Layer to S3
+    - name: Upload to S3
+      run: |
+        aws s3 cp build/layer.zip s3://rcgrafbucket/layer.zip
+
