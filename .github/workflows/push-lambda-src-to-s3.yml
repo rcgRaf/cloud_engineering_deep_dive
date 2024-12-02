@@ -30,7 +30,11 @@ jobs:
       run: |
         mkdir -p build
         zip -j build/lambda.zip src/lambda/index.js
-  
+    #debug        
+    - name: Debug Directory Structure
+      run: |
+        ls -R src/lambda || echo "Directory src/lambda does not exist"
+        ls -R src/lambda/nodejs || echo "Directory src/lambda/nodejs does not exist"
     
     # Step 4: Zip the Lambda layer
     - name: Zip Lambda Layer
