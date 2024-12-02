@@ -36,7 +36,7 @@ jobs:
     - name: Zip Lambda Layer
       run: |
         cd build
-        zip -j build/layer.zip src/lambda/nodejs
+        zip -r build/layer.zip src/lambda/nodejs
  
 
     # Step 5: Upload to S3
