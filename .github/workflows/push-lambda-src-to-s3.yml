@@ -29,7 +29,7 @@ jobs:
     - name: Zip Lambda Code
       run: |
         mkdir -p build
-        zip -j build/lambda.zip src/lambda/index.js
+        zip -j build/lambda.zip src/lambda/src/index.js
     #debug        
     - name: Debug Directory Structure
       run: |
