@@ -35,7 +35,7 @@ jobs:
     # Step 4: Zip the Lambda layer
     - name: Zip Lambda Layer
       run: |
-        cd build
+        mkdir -p build
         zip -r build/layer.zip src/lambda/nodejs
  
 
