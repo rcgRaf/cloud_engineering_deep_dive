@@ -17,4 +17,5 @@ locals {
   core_region      = data.aws_region.current.name
   github_org       = "rcgRaf"
   github_repo_name = "cloud_engineering_deep_dive"
+  queue_names = ["MarketingQueue", "InventoryQueue", "AnalyticsQueue"]
 }

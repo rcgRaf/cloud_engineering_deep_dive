@@ -38,8 +38,33 @@ resource "aws_iam_role_policy" "lambda_policy" {
 EOF
 }
 
-resource "aws_lambda_function" "hello_world" {
-  function_name = "hello_world_lambda"
+resource "aws_iam_role_policy" "lambda_sqs_policy" {
+  name   = "LambdaSQSPolicy"
+  role   = aws_iam_role.lambda_execution_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes"
+        ],
+        Resource = [
+          for queue in aws_sqs_queue.queues : queue.arn
+        ]
+      }
+    ]
+  })
+}
+
+
+resource "aws_lambda_function" "product_lambdas" {
+  for_each = toset(local.queue_names)
+
+  function_name = "${each.value}_Handler"
   role          = aws_iam_role.lambda_execution_role.arn
   runtime       = "nodejs18.x"
   handler       = "index.handler"
@@ -50,8 +75,25 @@ resource "aws_lambda_function" "hello_world" {
   layers = [
     aws_lambda_layer_version.node_js_layer.arn ]
 
+
+  environment {
+    variables = {
+      QUEUE_NAME = aws_sqs_queue.queues[each.key].name
+    }
+  }
+
   # Compute the hash from the S3 object
   source_code_hash = filebase64sha256("../src/lambda/src/index.js")
+}
+
+# Add SQS triggers for each Lambda function
+resource "aws_lambda_event_source_mapping" "lambda_sqs_trigger" {
+  for_each = toset(local.queue_names)
+
+  event_source_arn = aws_sqs_queue.queues[each.key].arn
+  function_name    = aws_lambda_function.product_lambdas[each.key].arn
+  batch_size       = 10
+  enabled          = true
 }
 
 resource "aws_lambda_layer_version" "node_js_layer" {
@@ -66,52 +108,4 @@ resource "aws_lambda_layer_version" "node_js_layer" {
 
 data "aws_s3_bucket" "existing_bucket" {
   bucket = "rcgrafbucket"  # Replace with your existing bucket name
-}
-
-# IAM Role for GitHub Actions
-resource "aws_iam_role" "github_actions_role" {
-  name = "github_actions_lambda_deploy_role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Principal = {
-          Federated = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"
-        },
-        Action = "sts:AssumeRoleWithWebIdentity",
-        Condition = {
-          StringEquals = {
-            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          }
-          StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:${local.github_org}/${local.github_repo_name}:*"
-          }
-        }
-      }
-    ]
-  })
-}
-
-data "aws_caller_identity" "current" {}
-
-# IAM Policy for Role Permissions
-resource "aws_iam_role_policy" "github_actions_policy" {
-  name = "github_actions_lambda_deploy_policy"
-  role = aws_iam_role.github_actions_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = [
-          "s3:PutObject",
-          "s3:GetObject"
-        ],
-        Resource = "arn:aws:s3:::rcgrafbucket/*"
-      }
-    ]
-  })
 }
