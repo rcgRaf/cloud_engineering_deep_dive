@@ -83,7 +83,7 @@ resource "aws_lambda_function" "product_lambdas" {
   }
 
   # Compute the hash from the S3 object
-  source_code_hash = filebase64sha256("../src/lambda/src/index.js")
+  source_code_hash = data.aws_s3_object.lambda_function_src.etag
 }
 
 # Add SQS triggers for each Lambda function
@@ -103,7 +103,17 @@ resource "aws_lambda_layer_version" "node_js_layer" {
   s3_bucket = data.aws_s3_bucket.existing_bucket.bucket
   s3_key    = "layer.zip"
 
-  source_code_hash = filebase64sha256("../src/lambda/src/index.js")
+  source_code_hash = data.aws_s3_object.lambda_layer_src.etag
+}
+
+data "aws_s3_object" "lambda_function_src"{
+  bucket = data.aws_s3_bucket.existing_bucket.bucket
+  key = "lambda.zip"
+}
+
+data "aws_s3_object" "lambda_layer_src"{
+  bucket = data.aws_s3_bucket.existing_bucket.bucket
+  key = "layer.zip"
 }
 
 data "aws_s3_bucket" "existing_bucket" {
